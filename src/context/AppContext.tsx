@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-import { AppState, Theme, SelectedOptions, DayPlan } from '../types';
+import React, { createContext, useContext, useReducer, ReactNode, Dispatch, useCallback } from 'react';
+import { AppState, Theme, SelectedOptions, DayPlan, FavoriteLocation, User, AppAction } from '../types';
 
 interface AppContextType extends AppState {
   setTheme: (theme: Theme) => void;
@@ -7,16 +7,12 @@ interface AppContextType extends AppState {
   setLoading: (loading: boolean) => void;
   setGeneratedPlan: (plan: DayPlan | null) => void;
   setError: (error: string | null) => void;
+  addToFavorites: (activity: { time: string; title: string; description: string; location: string }) => void;
+  removeFromFavorites: (id: string) => void;
+  login: (userData: User) => void;
+  logout: () => void;
   resetApp: () => void;
 }
-
-type AppAction =
-  | { type: 'SET_THEME'; payload: Theme }
-  | { type: 'SET_SELECTED_OPTIONS'; payload: SelectedOptions }
-  | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_GENERATED_PLAN'; payload: DayPlan | null }
-  | { type: 'SET_ERROR'; payload: string | null }
-  | { type: 'RESET_APP' };
 
 const initialState: AppState = {
   currentTheme: 'light',
@@ -26,7 +22,10 @@ const initialState: AppState = {
   },
   isLoading: false,
   generatedPlan: null,
-  error: null
+  error: null,
+  favoriteLocations: [],
+  isAuthenticated: false,
+  user: null
 };
 
 function appReducer(state: AppState, action: AppAction): AppState {
@@ -41,6 +40,22 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, generatedPlan: action.payload };
     case 'SET_ERROR':
       return { ...state, error: action.payload };
+    case 'ADD_TO_FAVORITES':
+      return { 
+        ...state, 
+        favoriteLocations: [...state.favoriteLocations, action.payload]
+      };
+    case 'REMOVE_FROM_FAVORITES':
+      return { 
+        ...state, 
+        favoriteLocations: state.favoriteLocations.filter(fav => fav.id !== action.payload)
+      };
+    case 'SET_FAVORITES':
+      return { ...state, favoriteLocations: action.payload };
+    case 'LOGIN':
+      return { ...state, isAuthenticated: true, user: action.payload };
+    case 'LOGOUT':
+      return { ...state, isAuthenticated: false, user: null };
     case 'RESET_APP':
       return initialState;
     default:
@@ -51,32 +66,87 @@ function appReducer(state: AppState, action: AppAction): AppState {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(appReducer, initialState);
+  // Initialize state with favorites and user from localStorage
+  const [state, dispatch] = useReducer(appReducer, initialState, () => {
+    const savedFavorites = localStorage.getItem('oneday-favorites');
+    const savedUser = localStorage.getItem('oneday-user');
+    
+    const favorites = savedFavorites ? JSON.parse(savedFavorites).map((fav: any) => ({
+      ...fav,
+      addedAt: new Date(fav.addedAt)
+    })) : [];
 
-  const setTheme = (theme: Theme) => {
+    const user = savedUser ? JSON.parse(savedUser) : null;
+
+    return {
+      ...initialState,
+      favoriteLocations: favorites,
+      isAuthenticated: !!user,
+      user: user
+    };
+  }) as [AppState, Dispatch<AppAction>];
+
+  const setTheme = useCallback((theme: Theme) => {
     dispatch({ type: 'SET_THEME', payload: theme });
     localStorage.setItem('oneday-theme', theme);
-  };
+  }, [dispatch]);
 
-  const setSelectedOptions = (options: SelectedOptions) => {
+  const setSelectedOptions = useCallback((options: SelectedOptions) => {
     dispatch({ type: 'SET_SELECTED_OPTIONS', payload: options });
-  };
+  }, [dispatch]);
 
-  const setLoading = (loading: boolean) => {
+  const setLoading = useCallback((loading: boolean) => {
     dispatch({ type: 'SET_LOADING', payload: loading });
-  };
+  }, [dispatch]);
 
-  const setGeneratedPlan = (plan: DayPlan | null) => {
+  const setGeneratedPlan = useCallback((plan: DayPlan | null) => {
     dispatch({ type: 'SET_GENERATED_PLAN', payload: plan });
-  };
+  }, [dispatch]);
 
-  const setError = (error: string | null) => {
+  const setError = useCallback((error: string | null) => {
     dispatch({ type: 'SET_ERROR', payload: error });
-  };
+  }, [dispatch]);
 
-  const resetApp = () => {
+  const addToFavorites = useCallback((activity: { time: string; title: string; description: string; location: string }) => {
+    const favoriteLocation: FavoriteLocation = {
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      title: activity.title,
+      description: activity.description,
+      location: activity.location,
+      time: activity.time,
+      addedAt: new Date()
+    };
+    
+    dispatch({ type: 'ADD_TO_FAVORITES', payload: favoriteLocation });
+    
+    // Save to localStorage
+    const updatedFavorites = [...state.favoriteLocations, favoriteLocation];
+    localStorage.setItem('oneday-favorites', JSON.stringify(updatedFavorites));
+  }, [dispatch, state.favoriteLocations]);
+
+  const removeFromFavorites = useCallback((id: string) => {
+    dispatch({ type: 'REMOVE_FROM_FAVORITES', payload: id });
+    
+    // Update localStorage
+    const updatedFavorites = state.favoriteLocations.filter((fav: FavoriteLocation) => fav.id !== id);
+    localStorage.setItem('oneday-favorites', JSON.stringify(updatedFavorites));
+  }, [dispatch, state.favoriteLocations]);
+
+  const login = useCallback((userData: User) => {
+    dispatch({ type: 'LOGIN', payload: userData });
+    // Save user data to localStorage
+    localStorage.setItem('oneday-user', JSON.stringify(userData));
+  }, [dispatch]);
+
+  const logout = useCallback(() => {
+    dispatch({ type: 'LOGOUT' });
+    // Remove user data from localStorage
+    localStorage.removeItem('oneday-user');
+  }, [dispatch]);
+
+  const resetApp = useCallback(() => {
     dispatch({ type: 'RESET_APP' });
-  };
+  }, [dispatch]);
 
   const value: AppContextType = {
     ...state,
@@ -85,6 +155,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setLoading,
     setGeneratedPlan,
     setError,
+    addToFavorites,
+    removeFromFavorites,
+    login,
+    logout,
     resetApp
   };
 

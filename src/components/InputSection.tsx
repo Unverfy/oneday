@@ -117,21 +117,19 @@ const InputSection: React.FC = () => {
   };
 
   return (
-    <section className="input-section">
-      <div className="input-container">
-        <textarea
-          value={userInput}
-          onChange={(e) => setUserInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Опиши свій день: 'у мене вихідний / я в Києві / хочу розслабитися'"
-          rows={3}
-        />
-        
-        {/* Options Row */}
-        <div className="options-row">
-          {/* Theme Dropdown */}
-          <div className="theme-dropdown-container">
-            <button 
+    <div className="input-section-content">
+      <textarea
+        value={userInput}
+        onChange={(e) => setUserInput(e.target.value)}
+        onKeyDown={handleKeyDown}
+        style={{ resize: 'none', height: '40px' }}
+      />
+      
+      {/* Options Row */}
+      <div className="options-row">
+        {/* Theme Dropdown */}
+        <div className="theme-dropdown-container">
+          <button 
               className={`theme-dropdown-btn ${themeDropdownOpen ? 'open' : ''}`}
               onClick={() => setThemeDropdownOpen(!themeDropdownOpen)}
             >
@@ -143,26 +141,26 @@ const InputSection: React.FC = () => {
                 }
               </span>
               <i className="fas fa-chevron-down"></i>
-            </button>
-            {themeDropdownOpen && (
-              <div className="theme-dropdown open">
-                {THEME_OPTIONS.map(option => (
-                  <button
-                    key={option.value}
-                    className="theme-option"
-                    onClick={() => selectTheme(option.value)}
-                  >
-                    <span className="theme-icon">{option.icon}</span>
-                    <span className="theme-text">{option.label}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          </button>
+          {themeDropdownOpen && (
+            <div className="theme-dropdown open">
+              {THEME_OPTIONS.map(option => (
+                <button
+                  key={option.value}
+                  className="theme-option"
+                  onClick={() => selectTheme(option.value)}
+                >
+                  <span className="theme-icon">{option.icon}</span>
+                  <span className="theme-text">{option.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
-          {/* Day Type Dropdown */}
-          <div className="day-type-dropdown-container">
-            <button 
+        {/* Day Type Dropdown */}
+        <div className="day-type-dropdown-container">
+          <button 
               className={`day-type-dropdown-btn ${dayTypeDropdownOpen ? 'open' : ''}`}
               onClick={() => setDayTypeDropdownOpen(!dayTypeDropdownOpen)}
             >
@@ -174,29 +172,28 @@ const InputSection: React.FC = () => {
                 }
               </span>
               <i className="fas fa-chevron-down"></i>
-            </button>
-            {dayTypeDropdownOpen && (
-              <div className="day-type-dropdown open">
-                {DAY_TYPE_OPTIONS.map(option => (
-                  <button
-                    key={option.value}
-                    className="day-type-option"
-                    onClick={() => selectDayType(option.value)}
-                  >
-                    <span className="day-type-icon">{option.icon}</span>
-                    <span className="day-type-text">{option.label}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          </button>
+          {dayTypeDropdownOpen && (
+            <div className="day-type-dropdown open">
+              {DAY_TYPE_OPTIONS.map(option => (
+                <button
+                  key={option.value}
+                  className="day-type-option"
+                  onClick={() => selectDayType(option.value)}
+                >
+                  <span className="day-type-icon">{option.icon}</span>
+                  <span className="day-type-text">{option.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-        
-        <button className="generate-btn" onClick={generateDayPlan}>
-          <i className="fas fa-magic"></i>
-          <span>Створити ідеальний день</span>
-        </button>
       </div>
+      
+      <button className="generate-btn" onClick={generateDayPlan}>
+        <i className="fas fa-magic"></i>
+        <span>Створити ідеальний день</span>
+      </button>
 
       {/* Selected Options Display */}
       <div className="selected-options">
@@ -215,7 +212,7 @@ const InputSection: React.FC = () => {
           )}
         </div>
       </div>
-    </section>
+    </div>
   );
 };
 
