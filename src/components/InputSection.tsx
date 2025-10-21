@@ -38,69 +38,25 @@ const InputSection: React.FC = () => {
 
     try {
       console.log('🤖 Attempting AI generation...');
+      console.log('📝 User input:', userInput);
       
       // Always try Gemini AI first
       const geminiService = GeminiService.getInstance();
+      console.log('🔧 Gemini service instance created');
+      
       const aiPlan = await geminiService.generatePlan(userInput);
+      console.log('📥 AI plan result:', aiPlan);
       
       if (aiPlan && aiPlan.activities && aiPlan.activities.length > 0) {
         console.log('✅ AI plan generated successfully!');
+        console.log('📋 Plan title:', aiPlan.title);
+        console.log('📋 Activities count:', aiPlan.activities.length);
         setGeneratedPlan(aiPlan);
         return;
       }
 
-      console.log('⚠️ AI generation failed, trying alternative approach...');
-      
-      // If AI fails, create a custom plan based on user input
-      const keywords = parseUserInput(userInput);
-      const theme = selectedOptions.theme || keywords.theme || 'relax';
-      const dayType = selectedOptions.dayType || keywords.dayType || 'weekend';
-      
-      // Create a more personalized plan based on user input
-      const customPlan = {
-        title: `Персоналізований план дня`,
-        subtitle: `Створено на основі вашого запиту`,
-        activities: [
-          {
-            time: '09:00',
-            title: 'Сніданок',
-            description: 'Починаємо день з поживного сніданку',
-            location: 'Дома або в кафе'
-          },
-          {
-            time: '10:30',
-            title: 'Активність',
-            description: 'Час для основної активності дня',
-            location: 'Залежить від ваших побажань'
-          },
-          {
-            time: '12:30',
-            title: 'Обід',
-            description: 'Смачний обід для відновлення енергії',
-            location: 'Ресторан або кафе'
-          },
-          {
-            time: '14:00',
-            title: 'Відпочинок',
-            description: 'Час для розслаблення та відпочинку',
-            location: 'Парк або вдома'
-          },
-          {
-            time: '16:00',
-            title: 'Друга активність',
-            description: 'Продовжуємо день з цікавою активністю',
-            location: 'Залежить від ваших інтересів'
-          },
-          {
-            time: '18:00',
-            title: 'Вечеря',
-            description: 'Приємна вечеря для завершення дня',
-            location: 'Ресторан або вдома'
-          }
-        ]
-      };
-
-      setGeneratedPlan(customPlan);
+      console.log('❌ AI generation failed');
+      setError('AI не працює зараз. Спробуйте пізніше або перевірте налаштування API ключа.');
 
     } catch (error) {
       console.error('❌ Error generating plan:', error);
@@ -122,7 +78,7 @@ const InputSection: React.FC = () => {
         value={userInput}
         onChange={(e) => setUserInput(e.target.value)}
         onKeyDown={handleKeyDown}
-        style={{ resize: 'none', height: '40px' }}
+        placeholder="Опиши свої побажання для ідеального дня..."
       />
       
       {/* Options Row */}

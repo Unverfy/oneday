@@ -47,6 +47,10 @@ const HeroSection: React.FC = () => {
             <i className="fas fa-book"></i>
             <span>Навчання</span>
           </div>
+          <div className="floating-card card-5">
+            <i className="fas fa-spa"></i>
+            <span>Релакс</span>
+          </div>
         </div>
       </div>
     </section>

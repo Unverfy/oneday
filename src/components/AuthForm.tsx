@@ -122,6 +122,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuth }) => {
             <div className="auth-floating-card card-4">
               <i className="fas fa-utensils"></i> Їжа
             </div>
+            <div className="auth-floating-card card-5">
+              <i className="fas fa-spa"></i> Релакс
+            </div>
           </div>
         </div>
       </div>

@@ -21,9 +21,17 @@ export class GeminiService {
       console.log('🤖 Attempting to generate plan with Gemini AI...');
       console.log('📝 User input:', userInput);
       
+      // Check if API key is valid
+      if (this.apiKey === 'YOUR_GEMINI_API_KEY_HERE' || !this.apiKey) {
+        console.log('❌ API key not configured');
+        return null;
+      }
+      
+      console.log('🔑 API key found:', this.apiKey.substring(0, 10) + '...');
+      
       const prompt = `Ти - експерт з планування ідеальних днів в Україні. Користувач описав свої побажання: "${userInput}"
 
-Створи детальний план дня з конкретними місцями та активностями. Відповідай ТІЛЬКИ у форматі JSON без додаткового тексту:
+Створи детальний план дня з КОНКРЕТНИМИ місцями та активностями. Відповідай ТІЛЬКИ у форматі JSON без додаткового тексту:
 
 {
   "title": "Назва плану",
@@ -33,25 +41,23 @@ export class GeminiService {
       "time": "09:00",
       "title": "Назва активності",
       "description": "Детальний опис",
-      "location": "Конкретна адреса або назва місця"
+      "location": "КОНКРЕТНА назва закладу, парку, музею, ресторану з адресою"
     }
   ]
 }
 
-Врахуй:
-- Місцезнаходження користувача (якщо вказано)
-- Тип дня (вихідний/робочий/відпустка)
-- Тему дня (розслаблення/продуктивність/романтика/пригоди/культура)
-- Реалістичний розклад з часом
-- Конкретні місця в Україні (якщо не вказано інше)
-- Різноманітні активності протягом дня
-- 6-8 активностей з 09:00 до 20:00
+ВАЖЛИВО:
+- Використовуй ТІЛЬКИ реальні місця в Україні
+- Вказуй конкретні назви закладів, парків, музеїв
+- Додавай адреси або район міста
+- Якщо користувач вказав місто (наприклад "Вінниця"), використовуй місця з цього міста
+- Створюй реалістичний розклад з 6-8 активностями з 09:00 до 20:00
 - Будь креативним та персоналізованим`;
 
       console.log('📤 Sending request to Gemini API...');
       
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${this.apiKey}`,
         {
           method: 'POST',
           headers: {
@@ -72,7 +78,7 @@ export class GeminiService {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('❌ API Error:', errorText);
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+        return null;
       }
 
       const data: GeminiResponse = await response.json();
@@ -119,10 +125,11 @@ export class GeminiService {
     }
   }
 
+
   public async testConnection(): Promise<boolean> {
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${this.apiKey}`,
         {
           method: 'POST',
           headers: {
