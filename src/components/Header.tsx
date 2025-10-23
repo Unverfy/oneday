@@ -6,6 +6,10 @@ const Header: React.FC = () => {
   const { currentTheme, setTheme, user, logout } = useApp();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [favoritesModalOpen, setFavoritesModalOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [editProfileModalOpen, setEditProfileModalOpen] = useState(false);
+  const [interestsModalOpen, setInterestsModalOpen] = useState(false);
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
 
   const toggleTheme = () => {
     const newTheme = currentTheme === 'light' ? 'dark' : 'light';
@@ -22,18 +26,67 @@ const Header: React.FC = () => {
 
   const openFavoritesModal = () => {
     setFavoritesModalOpen(true);
-    setSidebarOpen(false); // Close sidebar when opening favorites
+    setSidebarOpen(false);
   };
 
   const closeFavoritesModal = () => {
     setFavoritesModalOpen(false);
   };
 
-  // Handle Escape key to close sidebar and favorites modal
+  const openProfileModal = () => {
+    setProfileModalOpen(true);
+    setSidebarOpen(false);
+  };
+
+  const closeProfileModal = () => {
+    setProfileModalOpen(false);
+  };
+
+  const openEditProfileModal = () => {
+    setEditProfileModalOpen(true);
+    setProfileModalOpen(false);
+  };
+
+  const closeEditProfileModal = () => {
+    setEditProfileModalOpen(false);
+  };
+
+  const openInterestsModal = () => {
+    setInterestsModalOpen(true);
+    setProfileModalOpen(false);
+  };
+
+  const closeInterestsModal = () => {
+    setInterestsModalOpen(false);
+  };
+
+  const openHistoryModal = () => {
+    setHistoryModalOpen(true);
+    setSidebarOpen(false);
+  };
+
+  const closeHistoryModal = () => {
+    setHistoryModalOpen(false);
+  };
+
+  const handleLogout = () => {
+    logout();
+    setProfileModalOpen(false);
+  };
+
+  // Handle Escape key to close modals
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (favoritesModalOpen) {
+        if (historyModalOpen) {
+          closeHistoryModal();
+        } else if (interestsModalOpen) {
+          closeInterestsModal();
+        } else if (editProfileModalOpen) {
+          closeEditProfileModal();
+        } else if (profileModalOpen) {
+          closeProfileModal();
+        } else if (favoritesModalOpen) {
           closeFavoritesModal();
         } else if (sidebarOpen) {
           closeSidebar();
@@ -43,7 +96,7 @@ const Header: React.FC = () => {
 
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [sidebarOpen, favoritesModalOpen]);
+  }, [sidebarOpen, favoritesModalOpen, profileModalOpen, editProfileModalOpen, interestsModalOpen, historyModalOpen]);
 
   return (
     <>
@@ -73,11 +126,11 @@ const Header: React.FC = () => {
         <div className="menu-section">
           <h3>Акаунт</h3>
           <div className="account-options">
-            <button className="account-btn">
+            <button className="account-btn" onClick={openProfileModal}>
               <i className="fas fa-user"></i>
               Профіль
             </button>
-            <button className="account-btn">
+            <button className="account-btn" onClick={openHistoryModal}>
               <i className="fas fa-history"></i>
               Історія планів
             </button>
@@ -128,27 +181,397 @@ const Header: React.FC = () => {
           </div>
         </div>
 
-        <div className="menu-section">
-          <h3>Акаунт</h3>
-          <div className="account-info">
-            <div className="user-info">
-              <i className="fas fa-user-circle"></i>
-              <div>
-                <div className="user-name">{user?.login}</div>
-                <div className="user-email">{user?.email}</div>
-              </div>
-            </div>
-            <button className="logout-btn" onClick={logout}>
-              <i className="fas fa-sign-out-alt"></i>
-              Вийти
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* Overlay */}
       {sidebarOpen && (
         <div className="overlay active" onClick={closeSidebar}></div>
+      )}
+
+      {/* Profile Modal */}
+      {profileModalOpen && (
+        <div className="profile-modal-overlay" onClick={closeProfileModal}>
+          <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="profile-modal-header">
+              <h2>Профіль користувача</h2>
+              <button className="close-btn" onClick={closeProfileModal}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="profile-modal-content">
+              <div className="profile-info">
+                <div className="profile-avatar">
+                  <i className="fas fa-user-circle"></i>
+                </div>
+                <div className="profile-details">
+                  <h3>{user?.login}</h3>
+                  <p>{user?.email}</p>
+                </div>
+              </div>
+              <div className="profile-actions">
+                <button className="profile-action-btn" onClick={openEditProfileModal}>
+                  <i className="fas fa-edit"></i>
+                  Редагувати профіль
+                </button>
+                <button className="profile-action-btn" onClick={openInterestsModal}>
+                  <i className="fas fa-tags"></i>
+                  Мої інтереси
+                </button>
+                <button className="profile-action-btn logout-btn" onClick={handleLogout}>
+                  <i className="fas fa-sign-out-alt"></i>
+                  Вийти з акаунта
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* History Modal */}
+      {historyModalOpen && (
+        <div className="history-modal-overlay" onClick={closeHistoryModal}>
+          <div className="history-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="history-modal-header">
+              <h2>Історія планів</h2>
+              <button className="close-btn" onClick={closeHistoryModal}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="history-modal-content">
+              {/* Search and Filters */}
+              <div className="history-controls">
+                <div className="search-container">
+                  <i className="fas fa-search"></i>
+                  <input 
+                    type="text" 
+                    placeholder="Пошук по назві, місту або місцю..." 
+                    className="search-input"
+                  />
+                </div>
+                <div className="history-tabs">
+                  <button className="tab-btn active">Вся історія</button>
+                  <button className="tab-btn">Збережені</button>
+                </div>
+              </div>
+
+              {/* Plans Grid */}
+              <div className="plans-grid">
+                {/* Sample Plan Cards */}
+                <div className="plan-card">
+                  <div className="plan-card-header">
+                    <h3>Гастро-тур: Вінниця</h3>
+                    <div className="plan-date">21 жовтня 2025</div>
+                  </div>
+                  <div className="plan-card-body">
+                    <div className="plan-location">
+                      <i className="fas fa-map-marker-alt"></i>
+                      Місто: Вінниця
+                    </div>
+                    <div className="plan-description">
+                      Початок: Кав'ярня 'Чорна Кішка', далі відвідування місцевих ресторанів та дегустація традиційних страв...
+                    </div>
+                  </div>
+                  <div className="plan-card-actions">
+                    <button className="action-btn detail-btn">
+                      <i className="fas fa-eye"></i>
+                      Детальніше
+                    </button>
+                    <button className="action-btn favorite-btn">
+                      <i className="fas fa-star"></i>
+                    </button>
+                    <button className="action-btn delete-btn">
+                      <i className="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="plan-card">
+                  <div className="plan-card-header">
+                    <h3>Культурний день: Київ</h3>
+                    <div className="plan-date">18 жовтня 2025</div>
+                  </div>
+                  <div className="plan-card-body">
+                    <div className="plan-location">
+                      <i className="fas fa-map-marker-alt"></i>
+                      Місто: Київ
+                    </div>
+                    <div className="plan-description">
+                      Відвідування музеїв, галерей та історичних пам'яток. Початок з Національного музею мистецтв...
+                    </div>
+                  </div>
+                  <div className="plan-card-actions">
+                    <button className="action-btn detail-btn">
+                      <i className="fas fa-eye"></i>
+                      Детальніше
+                    </button>
+                    <button className="action-btn favorite-btn active">
+                      <i className="fas fa-star"></i>
+                    </button>
+                    <button className="action-btn delete-btn">
+                      <i className="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="plan-card">
+                  <div className="plan-card-header">
+                    <h3>Природний маршрут: Карпати</h3>
+                    <div className="plan-date">15 жовтня 2025</div>
+                  </div>
+                  <div className="plan-card-body">
+                    <div className="plan-location">
+                      <i className="fas fa-map-marker-alt"></i>
+                      Місто: Карпати
+                    </div>
+                    <div className="plan-description">
+                      Пішохідний маршрут по гірських стежках, відвідування водоспадів та насолода природою...
+                    </div>
+                  </div>
+                  <div className="plan-card-actions">
+                    <button className="action-btn detail-btn">
+                      <i className="fas fa-eye"></i>
+                      Детальніше
+                    </button>
+                    <button className="action-btn favorite-btn">
+                      <i className="fas fa-star"></i>
+                    </button>
+                    <button className="action-btn delete-btn">
+                      <i className="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Empty State (hidden when there are plans) */}
+              <div className="empty-state" style={{ display: 'none' }}>
+                <div className="empty-state-icon">
+                  <i className="fas fa-calendar-plus"></i>
+                </div>
+                <h3>Ви ще не створювали ідеальних днів</h3>
+                <p>Давайте почнемо! Створіть свій перший план дня.</p>
+                <button className="create-plan-btn" onClick={closeHistoryModal}>
+                  <i className="fas fa-plus"></i>
+                  Створити план
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Interests Modal */}
+      {interestsModalOpen && (
+        <div className="interests-modal-overlay" onClick={closeInterestsModal}>
+          <div className="interests-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="interests-modal-header">
+              <h2>Мої інтереси</h2>
+              <button className="close-btn" onClick={closeInterestsModal}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="interests-modal-content">
+              {/* Personalization Progress */}
+              <div className="personalization-progress">
+                <h3>Рівень вашої персоналізації</h3>
+                <div className="progress-bar">
+                  <div className="progress-fill" style={{ width: '35%' }}></div>
+                </div>
+                <p className="progress-text">35% завершено - Додайте ваші інтереси для кращої персоналізації планів!</p>
+              </div>
+
+              {/* Interests Section */}
+              <div className="interests-section">
+                <h3>Ваші інтереси</h3>
+                <p>Оберіть те, що вас цікавить:</p>
+                <div className="interests-grid">
+                  <label className="interest-tag">
+                    <input type="checkbox" />
+                    <span>☕ Кава</span>
+                  </label>
+                  <label className="interest-tag">
+                    <input type="checkbox" />
+                    <span>🌳 Парки</span>
+                  </label>
+                  <label className="interest-tag">
+                    <input type="checkbox" />
+                    <span>🎨 Мистецтво</span>
+                  </label>
+                  <label className="interest-tag">
+                    <input type="checkbox" />
+                    <span>🍽️ Ресторани</span>
+                  </label>
+                  <label className="interest-tag">
+                    <input type="checkbox" />
+                    <span>🎬 Кіно</span>
+                  </label>
+                  <label className="interest-tag">
+                    <input type="checkbox" />
+                    <span>🏃 Спорт</span>
+                  </label>
+                  <label className="interest-tag">
+                    <input type="checkbox" />
+                    <span>📚 Книги</span>
+                  </label>
+                  <label className="interest-tag">
+                    <input type="checkbox" />
+                    <span>🎵 Музика</span>
+                  </label>
+                  <label className="interest-tag">
+                    <input type="checkbox" />
+                    <span>🛍️ Шопінг</span>
+                  </label>
+                  <label className="interest-tag">
+                    <input type="checkbox" />
+                    <span>🌊 Природа</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Budget Section */}
+              <div className="budget-section">
+                <h3>Ваш бюджет</h3>
+                <p>Оберіть комфортний для вас рівень витрат:</p>
+                <div className="budget-options">
+                  <label className="budget-option">
+                    <input type="radio" name="budget" value="low" />
+                    <span className="budget-label">
+                      <span className="budget-symbol">$</span>
+                      <span className="budget-text">Економний</span>
+                    </span>
+                  </label>
+                  <label className="budget-option">
+                    <input type="radio" name="budget" value="medium" />
+                    <span className="budget-label">
+                      <span className="budget-symbol">$$</span>
+                      <span className="budget-text">Середній</span>
+                    </span>
+                  </label>
+                  <label className="budget-option">
+                    <input type="radio" name="budget" value="high" />
+                    <span className="budget-label">
+                      <span className="budget-symbol">$$$</span>
+                      <span className="budget-text">Преміум</span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Company Section */}
+              <div className="company-section">
+                <h3>Компанія</h3>
+                <p>З ким ви зазвичай проводите час:</p>
+                <div className="company-options">
+                  <label className="company-option">
+                    <input type="radio" name="company" value="alone" />
+                    <span className="company-label">
+                      <i className="fas fa-user"></i>
+                      <span>Сам</span>
+                    </span>
+                  </label>
+                  <label className="company-option">
+                    <input type="radio" name="company" value="couple" />
+                    <span className="company-label">
+                      <i className="fas fa-heart"></i>
+                      <span>З парою</span>
+                    </span>
+                  </label>
+                  <label className="company-option">
+                    <input type="radio" name="company" value="friends" />
+                    <span className="company-label">
+                      <i className="fas fa-users"></i>
+                      <span>З друзями</span>
+                    </span>
+                  </label>
+                  <label className="company-option">
+                    <input type="radio" name="company" value="family" />
+                    <span className="company-label">
+                      <i className="fas fa-home"></i>
+                      <span>З сім'єю</span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="interests-actions">
+                <button type="button" className="cancel-btn" onClick={closeInterestsModal}>
+                  Скасувати
+                </button>
+                <button type="button" className="save-btn">
+                  Зберегти інтереси
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Profile Modal */}
+      {editProfileModalOpen && (
+        <div className="edit-profile-modal-overlay" onClick={closeEditProfileModal}>
+          <div className="edit-profile-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="edit-profile-modal-header">
+              <h2>Редагування профілю</h2>
+              <button className="close-btn" onClick={closeEditProfileModal}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="edit-profile-modal-content">
+              <form className="edit-profile-form">
+                <div className="profile-photo-section">
+                  <div className="current-photo">
+                    <i className="fas fa-user-circle"></i>
+                  </div>
+                  <div className="photo-actions">
+                    <label htmlFor="photo-upload" className="photo-upload-btn">
+                      <i className="fas fa-camera"></i>
+                      Змінити фото
+                    </label>
+                    <input type="file" id="photo-upload" accept="image/*" style={{ display: 'none' }} />
+                    <button type="button" className="remove-photo-btn">
+                      <i className="fas fa-trash"></i>
+                      Видалити фото
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="edit-login">Логін</label>
+                  <input type="text" id="edit-login" defaultValue={user?.login} readOnly className="readonly-field" />
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="edit-email">Email</label>
+                  <input type="email" id="edit-email" defaultValue={user?.email} readOnly className="readonly-field" />
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="current-password">Поточний пароль</label>
+                  <input type="password" id="current-password" placeholder="Введіть поточний пароль" />
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="new-password">Новий пароль</label>
+                  <input type="password" id="new-password" placeholder="Введіть новий пароль" />
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="confirm-password">Підтвердіть новий пароль</label>
+                  <input type="password" id="confirm-password" placeholder="Підтвердіть новий пароль" />
+                </div>
+                
+                <div className="form-actions">
+                  <button type="button" className="cancel-btn" onClick={closeEditProfileModal}>
+                    Скасувати
+                  </button>
+                  <button type="submit" className="save-btn">
+                    Зберегти зміни
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Favorites Modal */}
