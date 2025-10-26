@@ -10,6 +10,9 @@ const Header: React.FC = () => {
   const [editProfileModalOpen, setEditProfileModalOpen] = useState(false);
   const [interestsModalOpen, setInterestsModalOpen] = useState(false);
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [aboutModalOpen, setAboutModalOpen] = useState(false);
+  const [faqModalOpen, setFaqModalOpen] = useState(false);
+  const [contactModalOpen, setContactModalOpen] = useState(false);
 
   const toggleTheme = () => {
     const newTheme = currentTheme === 'light' ? 'dark' : 'light';
@@ -69,6 +72,33 @@ const Header: React.FC = () => {
     setHistoryModalOpen(false);
   };
 
+  const openAboutModal = () => {
+    setAboutModalOpen(true);
+    setSidebarOpen(false);
+  };
+
+  const closeAboutModal = () => {
+    setAboutModalOpen(false);
+  };
+
+  const openFaqModal = () => {
+    setFaqModalOpen(true);
+    setSidebarOpen(false);
+  };
+
+  const closeFaqModal = () => {
+    setFaqModalOpen(false);
+  };
+
+  const openContactModal = () => {
+    setContactModalOpen(true);
+    setSidebarOpen(false);
+  };
+
+  const closeContactModal = () => {
+    setContactModalOpen(false);
+  };
+
   const handleLogout = () => {
     logout();
     setProfileModalOpen(false);
@@ -78,7 +108,13 @@ const Header: React.FC = () => {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (historyModalOpen) {
+        if (contactModalOpen) {
+          closeContactModal();
+        } else if (faqModalOpen) {
+          closeFaqModal();
+        } else if (aboutModalOpen) {
+          closeAboutModal();
+        } else if (historyModalOpen) {
           closeHistoryModal();
         } else if (interestsModalOpen) {
           closeInterestsModal();
@@ -96,7 +132,7 @@ const Header: React.FC = () => {
 
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [sidebarOpen, favoritesModalOpen, profileModalOpen, editProfileModalOpen, interestsModalOpen, historyModalOpen]);
+  }, [sidebarOpen, favoritesModalOpen, profileModalOpen, editProfileModalOpen, interestsModalOpen, historyModalOpen, aboutModalOpen, faqModalOpen, contactModalOpen]);
 
   return (
     <>
@@ -142,39 +178,17 @@ const Header: React.FC = () => {
         </div>
 
         <div className="menu-section">
-          <h3>Налаштування</h3>
-          <div className="settings-options">
-            <button className="settings-btn">
-              <i className="fas fa-bell"></i>
-              Сповіщення
-            </button>
-            <button className="settings-btn">
-              <i className="fas fa-language"></i>
-              Мова
-            </button>
-            <button className="settings-btn">
-              <i className="fas fa-map-marker-alt"></i>
-              Місцезнаходження
-            </button>
-            <button className="settings-btn">
-              <i className="fas fa-cog"></i>
-              Загальні налаштування
-            </button>
-          </div>
-        </div>
-
-        <div className="menu-section">
           <h3>Допомога</h3>
           <div className="help-options">
-            <button className="help-btn">
+            <button className="help-btn" onClick={openFaqModal}>
               <i className="fas fa-question-circle"></i>
               FAQ
             </button>
-            <button className="help-btn">
+            <button className="help-btn" onClick={openContactModal}>
               <i className="fas fa-envelope"></i>
               Зв'язатися з нами
             </button>
-            <button className="help-btn">
+            <button className="help-btn" onClick={openAboutModal}>
               <i className="fas fa-info-circle"></i>
               Про додаток
             </button>
@@ -221,6 +235,163 @@ const Header: React.FC = () => {
                   <i className="fas fa-sign-out-alt"></i>
                   Вийти з акаунта
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* About Modal */}
+      {aboutModalOpen && (
+        <div className="about-modal-overlay" onClick={closeAboutModal}>
+          <div className="about-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="about-modal-header">
+              <h2>Про додаток</h2>
+              <button className="close-btn" onClick={closeAboutModal}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="about-modal-content">
+              <h3>OneDay: Ваш ідеальний день, спланований штучним інтелектом</h3>
+              <p>Ви коли-небудь ловили себе на думці: "Чим би сьогодні зайнятися?" або "Хочу відпочити, але не знаю, з чого почати"?</p>
+              <p>OneDay — це ваш персональний помічник у плануванні дозвілля. Ми використовуємо потужність штучного інтелекту, щоб перетворити ваші абстрактні бажання на чіткий та захоплюючий план дня.</p>
+              
+              <h4>Як це працює?</h4>
+              <p><strong>Все просто.</strong> У вас є ідея, настрій або локація?</p>
+              
+              <div className="about-steps">
+                <div className="about-step">
+                  <div className="step-icon">1️⃣</div>
+                  <div className="step-content">
+                    <h4>Напишіть запит</h4>
+                    <p>Розкажіть нам, чого ви хочете. Наприклад: "Я у Вінниці і хочу відпочити" або "Шукаю пригоди в Києві на вихідних".</p>
+                  </div>
+                </div>
+                
+                <div className="about-step">
+                  <div className="step-icon">2️⃣</div>
+                  <div className="step-content">
+                    <h4>Оберіть інтереси</h4>
+                    <p>Позначте, що вам до вподоби — чи то мистецтво, спорт, спокійна прогулянка чи гастрономічні відкриття.</p>
+                  </div>
+                </div>
+                
+                <div className="about-step">
+                  <div className="step-icon">3️⃣</div>
+                  <div className="step-content">
+                    <h4>Отримайте план</h4>
+                    <p>Наш ШІ проаналізує ваш запит та інтереси і миттєво згенерує унікальний розклад, сповнений ідей та активностей, створених саме для вас.</p>
+                  </div>
+                </div>
+              </div>
+              
+              <p className="about-conclusion">Більше не потрібно годинами шукати ідеї в інтернеті. З OneDay кожен ваш день може стати особливим. Спробуйте зараз і відкрийте для себе нові можливості!</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FAQ Modal */}
+      {faqModalOpen && (
+        <div className="faq-modal-overlay" onClick={closeFaqModal}>
+          <div className="faq-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="faq-modal-header">
+              <h2>FAQ</h2>
+              <button className="close-btn" onClick={closeFaqModal}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="faq-modal-content">
+              <div className="faq-item">
+                <h3>Що таке OneDay?</h3>
+                <p>OneDay — це додаток, який використовує штучний інтелект для створення персоналізованих планів на день. Ви просто кажете, чого хочете, а наш ШІ розробляє для вас детальний розклад.</p>
+              </div>
+              
+              <div className="faq-item">
+                <h3>Як це працює?</h3>
+                <p>Дуже просто! Ви пишете свій запит (наприклад, "Хочу провести день з друзями в парку") та обираєте свої інтереси (їжа, спорт, мистецтво тощо). На основі цих даних наш ШІ складає для вас готовий план.</p>
+              </div>
+              
+              <div className="faq-item">
+                <h3>Які запити я можу робити?</h3>
+                <p>Будь-які! Ви можете бути конкретним або загальним. Ось кілька прикладів:</p>
+                <ul>
+                  <li>"Хочу романтичний вечір у Львові"</li>
+                  <li>"Чим зайнятися з дітьми в Одесі в дощовий день?"</li>
+                  <li>"Я в своєму місті і хочу просто розслабитися"</li>
+                  <li>"Продуктивний день: спорт і навчання"</li>
+                </ul>
+                <p>Чим точніше ви опишете свій настрій та побажання, тим кращим буде результат.</p>
+              </div>
+              
+              <div className="faq-item">
+                <h3>Навіщо обирати "інтереси"?</h3>
+                <p>Ваші інтереси допомагають ШІ краще вас зрозуміти. Якщо ви вкажете, що любите "історію", план "відпочинку у Вінниці" може включати відвідування музею. Якщо оберете "їжа" — запропонує цікаві кафе. Це робить ваш план справді персоналізованим.</p>
+              </div>
+              
+              <div className="faq-item">
+                <h3>Це безкоштовно?</h3>
+                <p>Так, ви можете користуватися основними функціями OneDay абсолютно безкоштовно.</p>
+              </div>
+              
+              <div className="faq-item">
+                <h3>Чи працює OneDay в моєму місті?</h3>
+                <p>Так! Наш ШІ спирається на загальнодоступну інформацію і може генерувати ідеї для будь-якого міста чи локації, яку ви вкажете у своєму запиті.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Contact Modal */}
+      {contactModalOpen && (
+        <div className="contact-modal-overlay" onClick={closeContactModal}>
+          <div className="contact-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="contact-modal-header">
+              <h2>Зв'язатися з нами</h2>
+              <button className="close-btn" onClick={closeContactModal}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="contact-modal-content">
+              <div className="contact-intro">
+                <i className="fas fa-headset"></i>
+                <p>Маєте запитання чи пропозиції? Ми завжди раді допомогти!</p>
+              </div>
+
+              <div className="contact-methods">
+                <div className="contact-method">
+                  <div className="contact-method-icon">
+                    <i className="fab fa-telegram"></i>
+                  </div>
+                  <div className="contact-method-content">
+                    <h3>Telegram</h3>
+                    <p>Напишіть нам в Telegram</p>
+                    <a href="https://t.me/unverfy" target="_blank" rel="noopener noreferrer" className="contact-link">
+                      <i className="fab fa-telegram"></i>
+                      @unverfy
+                    </a>
+                  </div>
+                </div>
+
+                <div className="contact-method">
+                  <div className="contact-method-icon">
+                    <i className="fas fa-envelope"></i>
+                  </div>
+                  <div className="contact-method-content">
+                    <h3>Email</h3>
+                    <p>Надішліть нам листа</p>
+                    <a href="mailto:artemsidorthuk228@gmail.com" className="contact-link">
+                      <i className="fas fa-envelope"></i>
+                      artemsidorthuk228@gmail.com
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              <div className="contact-support">
+                <h4>Швидка допомога</h4>
+                <p>Ми відповідаємо на всі звернення протягом 24 годин.</p>
               </div>
             </div>
           </div>
