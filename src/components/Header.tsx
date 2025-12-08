@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import FavoritesSection from './FavoritesSection';
 
 const Header: React.FC = () => {
-  const { currentTheme, setTheme, user, logout } = useApp();
+  const { currentTheme, setTheme, user, logout, login } = useApp();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [favoritesModalOpen, setFavoritesModalOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
@@ -13,6 +13,12 @@ const Header: React.FC = () => {
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
   const [faqModalOpen, setFaqModalOpen] = useState(false);
   const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
+  
+  // Interests state
+  const [selectedInterests, setSelectedInterests] = useState<string[]>(user?.interests || []);
+  const [selectedBudget, setSelectedBudget] = useState<string>(user?.budget || '');
+  const [selectedCompany, setSelectedCompany] = useState<string>(user?.company || '');
 
   const toggleTheme = () => {
     const newTheme = currentTheme === 'light' ? 'dark' : 'light';
@@ -57,6 +63,7 @@ const Header: React.FC = () => {
   const openInterestsModal = () => {
     setInterestsModalOpen(true);
     setProfileModalOpen(false);
+    setSidebarOpen(false);
   };
 
   const closeInterestsModal = () => {
@@ -99,16 +106,93 @@ const Header: React.FC = () => {
     setContactModalOpen(false);
   };
 
+  const openChangePasswordModal = () => {
+    setChangePasswordModalOpen(true);
+    setProfileModalOpen(false);
+  };
+
+  const closeChangePasswordModal = () => {
+    setChangePasswordModalOpen(false);
+  };
+
   const handleLogout = () => {
     logout();
     setProfileModalOpen(false);
+  };
+
+  // Load interests when modal opens or user changes
+  useEffect(() => {
+    if (user) {
+      setSelectedInterests(user.interests || []);
+      setSelectedBudget(user.budget || '');
+      setSelectedCompany(user.company || '');
+    }
+  }, [user]);
+  
+  // Also update when interests modal opens
+  useEffect(() => {
+    if (interestsModalOpen && user) {
+      setSelectedInterests(user.interests || []);
+      setSelectedBudget(user.budget || '');
+      setSelectedCompany(user.company || '');
+    }
+  }, [interestsModalOpen, user]);
+
+  const handleInterestChange = (interest: string) => {
+    setSelectedInterests(prev => 
+      prev.includes(interest) 
+        ? prev.filter(i => i !== interest)
+        : [...prev, interest]
+    );
+  };
+
+  const handleSaveInterests = () => {
+    if (user) {
+      const updatedUser = {
+        ...user,
+        interests: selectedInterests,
+        budget: selectedBudget,
+        company: selectedCompany
+      };
+      
+      console.log('💾 Saving interests:', {
+        interests: selectedInterests,
+        budget: selectedBudget,
+        company: selectedCompany
+      });
+      
+      // Зберігаємо інтереси
+      login(updatedUser);
+      
+      // Перевірка збереження в localStorage
+      const savedUser = localStorage.getItem('oneday-user');
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        console.log('✅ Interests saved to localStorage:', {
+          interests: parsed.interests,
+          budget: parsed.budget,
+          company: parsed.company
+        });
+        
+        // Перевірка, що дані правильно збережені
+        if (parsed.interests && parsed.interests.length > 0) {
+          console.log('✅ Interests successfully saved:', parsed.interests);
+        }
+      }
+      
+      closeInterestsModal();
+    } else {
+      console.error('❌ Cannot save interests: user is null');
+    }
   };
 
   // Handle Escape key to close modals
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (contactModalOpen) {
+        if (changePasswordModalOpen) {
+          closeChangePasswordModal();
+        } else if (contactModalOpen) {
           closeContactModal();
         } else if (faqModalOpen) {
           closeFaqModal();
@@ -132,7 +216,7 @@ const Header: React.FC = () => {
 
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [sidebarOpen, favoritesModalOpen, profileModalOpen, editProfileModalOpen, interestsModalOpen, historyModalOpen, aboutModalOpen, faqModalOpen, contactModalOpen]);
+  }, [sidebarOpen, favoritesModalOpen, profileModalOpen, editProfileModalOpen, interestsModalOpen, historyModalOpen, aboutModalOpen, faqModalOpen, contactModalOpen, changePasswordModalOpen]);
 
   return (
     <>
@@ -174,8 +258,26 @@ const Header: React.FC = () => {
               <i className="fas fa-heart"></i>
               Улюблені місця
             </button>
+            <button className="account-btn" onClick={openInterestsModal}>
+              <i className="fas fa-tags"></i>
+              Мої інтереси
+            </button>
           </div>
         </div>
+
+        {/* User Interests Display in Sidebar */}
+        {user?.interests && user.interests.length > 0 && (
+          <div className="menu-section">
+            <h3>Ваші інтереси</h3>
+            <div className="sidebar-interests">
+              {user.interests.map((interest, index) => (
+                <span key={index} className="sidebar-interest-tag">
+                  {interest}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="menu-section">
           <h3>Допомога</h3>
@@ -227,9 +329,9 @@ const Header: React.FC = () => {
                   <i className="fas fa-edit"></i>
                   Редагувати профіль
                 </button>
-                <button className="profile-action-btn" onClick={openInterestsModal}>
-                  <i className="fas fa-tags"></i>
-                  Мої інтереси
+                <button className="profile-action-btn" onClick={openChangePasswordModal}>
+                  <i className="fas fa-key"></i>
+                  Змінити пароль
                 </button>
                 <button className="profile-action-btn logout-btn" onClick={handleLogout}>
                   <i className="fas fa-sign-out-alt"></i>
@@ -545,9 +647,21 @@ const Header: React.FC = () => {
               <div className="personalization-progress">
                 <h3>Рівень вашої персоналізації</h3>
                 <div className="progress-bar">
-                  <div className="progress-fill" style={{ width: '35%' }}></div>
+                  {(() => {
+                    const hasInterests = selectedInterests.length > 0;
+                    const hasBudget = selectedBudget !== '';
+                    const hasCompany = selectedCompany !== '';
+                    const progress = ((hasInterests ? 40 : 0) + (hasBudget ? 30 : 0) + (hasCompany ? 30 : 0));
+                    return (
+                      <>
+                        <div className="progress-fill" style={{ width: `${progress}%` }}></div>
+                        <p className="progress-text">
+                          {progress}% завершено - {progress < 100 ? 'Додайте ваші інтереси для кращої персоналізації планів!' : 'Відмінно! Ваш профіль повністю налаштований.'}
+                        </p>
+                      </>
+                    );
+                  })()}
                 </div>
-                <p className="progress-text">35% завершено - Додайте ваші інтереси для кращої персоналізації планів!</p>
               </div>
 
               {/* Interests Section */}
@@ -555,46 +669,16 @@ const Header: React.FC = () => {
                 <h3>Ваші інтереси</h3>
                 <p>Оберіть те, що вас цікавить:</p>
                 <div className="interests-grid">
-                  <label className="interest-tag">
-                    <input type="checkbox" />
-                    <span>☕ Кава</span>
-                  </label>
-                  <label className="interest-tag">
-                    <input type="checkbox" />
-                    <span>🌳 Парки</span>
-                  </label>
-                  <label className="interest-tag">
-                    <input type="checkbox" />
-                    <span>🎨 Мистецтво</span>
-                  </label>
-                  <label className="interest-tag">
-                    <input type="checkbox" />
-                    <span>🍽️ Ресторани</span>
-                  </label>
-                  <label className="interest-tag">
-                    <input type="checkbox" />
-                    <span>🎬 Кіно</span>
-                  </label>
-                  <label className="interest-tag">
-                    <input type="checkbox" />
-                    <span>🏃 Спорт</span>
-                  </label>
-                  <label className="interest-tag">
-                    <input type="checkbox" />
-                    <span>📚 Книги</span>
-                  </label>
-                  <label className="interest-tag">
-                    <input type="checkbox" />
-                    <span>🎵 Музика</span>
-                  </label>
-                  <label className="interest-tag">
-                    <input type="checkbox" />
-                    <span>🛍️ Шопінг</span>
-                  </label>
-                  <label className="interest-tag">
-                    <input type="checkbox" />
-                    <span>🌊 Природа</span>
-                  </label>
+                  {['☕ Кава', '🌳 Парки', '🎨 Мистецтво', '🍽️ Ресторани', '🎬 Кіно', '🏃 Спорт', '📚 Книги', '🎵 Музика', '🛍️ Шопінг', '🌊 Природа'].map((interest) => (
+                    <label key={interest} className="interest-tag">
+                      <input 
+                        type="checkbox" 
+                        checked={selectedInterests.includes(interest)}
+                        onChange={() => handleInterestChange(interest)}
+                      />
+                      <span>{interest}</span>
+                    </label>
+                  ))}
                 </div>
               </div>
 
@@ -604,21 +688,39 @@ const Header: React.FC = () => {
                 <p>Оберіть комфортний для вас рівень витрат:</p>
                 <div className="budget-options">
                   <label className="budget-option">
-                    <input type="radio" name="budget" value="low" />
+                    <input 
+                      type="radio" 
+                      name="budget" 
+                      value="low" 
+                      checked={selectedBudget === 'low'}
+                      onChange={(e) => setSelectedBudget(e.target.value)}
+                    />
                     <span className="budget-label">
                       <span className="budget-symbol">$</span>
                       <span className="budget-text">Економний</span>
                     </span>
                   </label>
                   <label className="budget-option">
-                    <input type="radio" name="budget" value="medium" />
+                    <input 
+                      type="radio" 
+                      name="budget" 
+                      value="medium" 
+                      checked={selectedBudget === 'medium'}
+                      onChange={(e) => setSelectedBudget(e.target.value)}
+                    />
                     <span className="budget-label">
                       <span className="budget-symbol">$$</span>
                       <span className="budget-text">Середній</span>
                     </span>
                   </label>
                   <label className="budget-option">
-                    <input type="radio" name="budget" value="high" />
+                    <input 
+                      type="radio" 
+                      name="budget" 
+                      value="high" 
+                      checked={selectedBudget === 'high'}
+                      onChange={(e) => setSelectedBudget(e.target.value)}
+                    />
                     <span className="budget-label">
                       <span className="budget-symbol">$$$</span>
                       <span className="budget-text">Преміум</span>
@@ -633,28 +735,52 @@ const Header: React.FC = () => {
                 <p>З ким ви зазвичай проводите час:</p>
                 <div className="company-options">
                   <label className="company-option">
-                    <input type="radio" name="company" value="alone" />
+                    <input 
+                      type="radio" 
+                      name="company" 
+                      value="alone" 
+                      checked={selectedCompany === 'alone'}
+                      onChange={(e) => setSelectedCompany(e.target.value)}
+                    />
                     <span className="company-label">
                       <i className="fas fa-user"></i>
                       <span>Сам</span>
                     </span>
                   </label>
                   <label className="company-option">
-                    <input type="radio" name="company" value="couple" />
+                    <input 
+                      type="radio" 
+                      name="company" 
+                      value="couple" 
+                      checked={selectedCompany === 'couple'}
+                      onChange={(e) => setSelectedCompany(e.target.value)}
+                    />
                     <span className="company-label">
                       <i className="fas fa-heart"></i>
                       <span>З парою</span>
                     </span>
                   </label>
                   <label className="company-option">
-                    <input type="radio" name="company" value="friends" />
+                    <input 
+                      type="radio" 
+                      name="company" 
+                      value="friends" 
+                      checked={selectedCompany === 'friends'}
+                      onChange={(e) => setSelectedCompany(e.target.value)}
+                    />
                     <span className="company-label">
                       <i className="fas fa-users"></i>
                       <span>З друзями</span>
                     </span>
                   </label>
                   <label className="company-option">
-                    <input type="radio" name="company" value="family" />
+                    <input 
+                      type="radio" 
+                      name="company" 
+                      value="family" 
+                      checked={selectedCompany === 'family'}
+                      onChange={(e) => setSelectedCompany(e.target.value)}
+                    />
                     <span className="company-label">
                       <i className="fas fa-home"></i>
                       <span>З сім'єю</span>
@@ -668,7 +794,7 @@ const Header: React.FC = () => {
                 <button type="button" className="cancel-btn" onClick={closeInterestsModal}>
                   Скасувати
                 </button>
-                <button type="button" className="save-btn">
+                <button type="button" className="save-btn" onClick={handleSaveInterests}>
                   Зберегти інтереси
                 </button>
               </div>
@@ -716,21 +842,6 @@ const Header: React.FC = () => {
                   <input type="email" id="edit-email" defaultValue={user?.email} readOnly className="readonly-field" />
                 </div>
                 
-                <div className="form-group">
-                  <label htmlFor="current-password">Поточний пароль</label>
-                  <input type="password" id="current-password" placeholder="Введіть поточний пароль" />
-                </div>
-                
-                <div className="form-group">
-                  <label htmlFor="new-password">Новий пароль</label>
-                  <input type="password" id="new-password" placeholder="Введіть новий пароль" />
-                </div>
-                
-                <div className="form-group">
-                  <label htmlFor="confirm-password">Підтвердіть новий пароль</label>
-                  <input type="password" id="confirm-password" placeholder="Підтвердіть новий пароль" />
-                </div>
-                
                 <div className="form-actions">
                   <button type="button" className="cancel-btn" onClick={closeEditProfileModal}>
                     Скасувати
@@ -757,6 +868,47 @@ const Header: React.FC = () => {
             </div>
             <div className="favorites-modal-content">
               <FavoritesSection />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Password Modal */}
+      {changePasswordModalOpen && (
+        <div className="change-password-modal-overlay" onClick={closeChangePasswordModal}>
+          <div className="change-password-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="change-password-modal-header">
+              <h2>Зміна пароля</h2>
+              <button className="close-btn" onClick={closeChangePasswordModal}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="change-password-modal-content">
+              <form className="change-password-form">
+                <div className="form-group">
+                  <label htmlFor="current-password">Поточний пароль</label>
+                  <input type="password" id="current-password" placeholder="Введіть поточний пароль" />
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="new-password">Новий пароль</label>
+                  <input type="password" id="new-password" placeholder="Введіть новий пароль" />
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="confirm-password">Підтвердіть новий пароль</label>
+                  <input type="password" id="confirm-password" placeholder="Підтвердіть новий пароль" />
+                </div>
+                
+                <div className="form-actions">
+                  <button type="button" className="cancel-btn" onClick={closeChangePasswordModal}>
+                    Скасувати
+                  </button>
+                  <button type="submit" className="save-btn">
+                    Зберегти пароль
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

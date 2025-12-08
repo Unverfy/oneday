@@ -77,6 +77,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     })) : [];
 
     const user = savedUser ? JSON.parse(savedUser) : null;
+    
+    // Логування завантажених інтересів
+    if (user && user.interests) {
+      console.log('📥 Loaded user interests from localStorage:', user.interests);
+    }
 
     return {
       ...initialState,
@@ -136,6 +141,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'LOGIN', payload: userData });
     // Save user data to localStorage
     localStorage.setItem('oneday-user', JSON.stringify(userData));
+    console.log('💾 User data saved to localStorage:', {
+      login: userData.login,
+      interests: userData.interests,
+      budget: userData.budget,
+      company: userData.company
+    });
   }, [dispatch]);
 
   const logout = useCallback(() => {

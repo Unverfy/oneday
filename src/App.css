@@ -210,6 +210,25 @@ body {
   transform: translateX(5px);
 }
 
+/* Sidebar Interests */
+.sidebar-interests {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.sidebar-interest-tag {
+  display: inline-block;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  color: white;
+  border-radius: 16px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
+}
+
 /* Header */
 .header {
   text-align: center;
@@ -973,6 +992,62 @@ body {
   font-size: 1.1rem;
   width: 20px;
   text-align: center;
+}
+
+/* Profile Interests Display */
+.profile-interests {
+  margin-bottom: 20px;
+  padding: 20px;
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+}
+
+.profile-interests h4 {
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+}
+
+.profile-interests-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.profile-interest-tag {
+  display: inline-block;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  color: white;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
+
+.profile-preference {
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.profile-preference strong {
+  color: var(--accent-primary);
+  margin-right: 8px;
+}
+
+.no-interests-message {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-style: italic;
+  margin: 0;
+  padding: 8px 0;
 }
 
 /* Change Password Modal */

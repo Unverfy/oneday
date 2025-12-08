@@ -59,6 +59,9 @@ export interface User {
   login: string;
   email: string;
   password: string;
+  interests?: string[];
+  budget?: string;
+  company?: string;
 }
 
 export interface AppState {

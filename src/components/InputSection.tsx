@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { GeminiService } from '../utils/gemini';
 
 const InputSection: React.FC = () => {
-  const { setLoading, setGeneratedPlan, setError } = useApp();
+  const { setLoading, setGeneratedPlan, setError, user } = useApp();
   const [userInput, setUserInput] = useState('');
 
   const generateDayPlan = async () => {
@@ -23,7 +23,16 @@ const InputSection: React.FC = () => {
       const geminiService = GeminiService.getInstance();
       console.log('🔧 Gemini service instance created');
       
-      const aiPlan = await geminiService.generatePlan(userInput);
+      // Передаємо інтереси користувача до ШІ
+      const userInterests = user?.interests || [];
+      const userBudget = user?.budget;
+      const userCompany = user?.company;
+      
+      console.log('👤 User interests:', userInterests);
+      console.log('💰 User budget:', userBudget);
+      console.log('👥 User company:', userCompany);
+      
+      const aiPlan = await geminiService.generatePlan(userInput, userInterests, userBudget, userCompany);
       console.log('📥 AI plan result:', aiPlan);
       
       if (aiPlan && aiPlan.activities && aiPlan.activities.length > 0) {
