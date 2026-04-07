@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { GeminiService } from '../utils/gemini';
 
 const InputSection: React.FC = () => {
-  const { setLoading, setGeneratedPlan, setError, user } = useApp();
+  const { setLoading, setGeneratedPlan, setError, user, addPlanToHistory } = useApp();
   const [userInput, setUserInput] = useState('');
 
   const generateDayPlan = async () => {
@@ -40,6 +40,9 @@ const InputSection: React.FC = () => {
         console.log('📋 Plan title:', aiPlan.title);
         console.log('📋 Activities count:', aiPlan.activities.length);
         setGeneratedPlan(aiPlan);
+
+        // Зберігаємо план в історію разом із текстом запиту
+        addPlanToHistory({ prompt: userInput, plan: aiPlan });
         return;
       }
 

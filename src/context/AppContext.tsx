@@ -1,11 +1,14 @@
 import React, { createContext, useContext, useReducer, ReactNode, Dispatch, useCallback } from 'react';
-import { AppState, Theme, SelectedOptions, DayPlan, FavoriteLocation, User, AppAction } from '../types';
+import { AppState, Theme, SelectedOptions, DayPlan, FavoriteLocation, User, AppAction, PlanHistoryItem } from '../types';
 
 interface AppContextType extends AppState {
   setTheme: (theme: Theme) => void;
   setSelectedOptions: (options: SelectedOptions) => void;
   setLoading: (loading: boolean) => void;
   setGeneratedPlan: (plan: DayPlan | null) => void;
+  addPlanToHistory: (params: { prompt: string; plan: DayPlan }) => void;
+  deletePlanFromHistory: (id: string) => void;
+  togglePlanFavoriteInHistory: (id: string) => void;
   setError: (error: string | null) => void;
   addToFavorites: (activity: { time: string; title: string; description: string; location: string }) => void;
   removeFromFavorites: (id: string) => void;
@@ -22,6 +25,7 @@ const initialState: AppState = {
   },
   isLoading: false,
   generatedPlan: null,
+  planHistory: [],
   error: null,
   favoriteLocations: [],
   isAuthenticated: false,
@@ -38,6 +42,23 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, isLoading: action.payload };
     case 'SET_GENERATED_PLAN':
       return { ...state, generatedPlan: action.payload };
+    case 'ADD_PLAN_HISTORY':
+      return {
+        ...state,
+        planHistory: [action.payload, ...state.planHistory]
+      };
+    case 'DELETE_PLAN_HISTORY':
+      return {
+        ...state,
+        planHistory: state.planHistory.filter(item => item.id !== action.payload)
+      };
+    case 'TOGGLE_PLAN_HISTORY_FAVORITE':
+      return {
+        ...state,
+        planHistory: state.planHistory.map(item =>
+          item.id === action.payload ? { ...item, isFavorite: !item.isFavorite } : item
+        )
+      };
     case 'SET_ERROR':
       return { ...state, error: action.payload };
     case 'ADD_TO_FAVORITES':
@@ -70,6 +91,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState, () => {
     const savedFavorites = localStorage.getItem('oneday-favorites');
     const savedUser = localStorage.getItem('oneday-user');
+    const savedHistory = localStorage.getItem('oneday-plan-history');
     
     const favorites = savedFavorites ? JSON.parse(savedFavorites).map((fav: any) => ({
       ...fav,
@@ -77,6 +99,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     })) : [];
 
     const user = savedUser ? JSON.parse(savedUser) : null;
+
+    const planHistory: PlanHistoryItem[] = savedHistory
+      ? JSON.parse(savedHistory)
+      : [];
     
     // Логування завантажених інтересів
     if (user && user.interests) {
@@ -86,6 +112,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return {
       ...initialState,
       favoriteLocations: favorites,
+      planHistory,
       isAuthenticated: !!user,
       user: user
     };
@@ -107,6 +134,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const setGeneratedPlan = useCallback((plan: DayPlan | null) => {
     dispatch({ type: 'SET_GENERATED_PLAN', payload: plan });
   }, [dispatch]);
+
+  const persistHistory = (items: PlanHistoryItem[]) => {
+    localStorage.setItem('oneday-plan-history', JSON.stringify(items));
+  };
+
+  const addPlanToHistory = useCallback((params: { prompt: string; plan: DayPlan }) => {
+    const newItem: PlanHistoryItem = {
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      prompt: params.prompt,
+      plan: params.plan,
+      createdAt: new Date().toISOString(),
+      isFavorite: false
+    };
+
+    const updatedHistory = [newItem, ...state.planHistory];
+    dispatch({ type: 'ADD_PLAN_HISTORY', payload: newItem });
+    persistHistory(updatedHistory);
+  }, [dispatch, state.planHistory]);
+
+  const deletePlanFromHistory = useCallback((id: string) => {
+    const updatedHistory = state.planHistory.filter(item => item.id !== id);
+    dispatch({ type: 'DELETE_PLAN_HISTORY', payload: id });
+    persistHistory(updatedHistory);
+  }, [dispatch, state.planHistory]);
+
+  const togglePlanFavoriteInHistory = useCallback((id: string) => {
+    const updatedHistory = state.planHistory.map(item =>
+      item.id === id ? { ...item, isFavorite: !item.isFavorite } : item
+    );
+    dispatch({ type: 'TOGGLE_PLAN_HISTORY_FAVORITE', payload: id });
+    persistHistory(updatedHistory);
+  }, [dispatch, state.planHistory]);
 
   const setError = useCallback((error: string | null) => {
     dispatch({ type: 'SET_ERROR', payload: error });
@@ -165,6 +224,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSelectedOptions,
     setLoading,
     setGeneratedPlan,
+    addPlanToHistory,
+    deletePlanFromHistory,
+    togglePlanFavoriteInHistory,
     setError,
     addToFavorites,
     removeFromFavorites,

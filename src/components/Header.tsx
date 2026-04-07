@@ -3,7 +3,17 @@ import { useApp } from '../context/AppContext';
 import FavoritesSection from './FavoritesSection';
 
 const Header: React.FC = () => {
-  const { currentTheme, setTheme, user, logout, login } = useApp();
+  const { 
+    currentTheme, 
+    setTheme, 
+    user, 
+    logout, 
+    login,
+    planHistory,
+    deletePlanFromHistory,
+    togglePlanFavoriteInHistory,
+    setGeneratedPlan
+  } = useApp();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [favoritesModalOpen, setFavoritesModalOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
@@ -14,6 +24,8 @@ const Header: React.FC = () => {
   const [faqModalOpen, setFaqModalOpen] = useState(false);
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
+  const [historySearch, setHistorySearch] = useState('');
+  const [historyTab, setHistoryTab] = useState<'all' | 'favorites'>('all');
   
   // Interests state
   const [selectedInterests, setSelectedInterests] = useState<string[]>(user?.interests || []);
@@ -519,114 +531,139 @@ const Header: React.FC = () => {
                     type="text" 
                     placeholder="Пошук по назві, місту або місцю..." 
                     className="search-input"
+                    value={historySearch}
+                    onChange={(e) => setHistorySearch(e.target.value)}
                   />
                 </div>
                 <div className="history-tabs">
-                  <button className="tab-btn active">Вся історія</button>
-                  <button className="tab-btn">Збережені</button>
+                  <button 
+                    className={`tab-btn ${historyTab === 'all' ? 'active' : ''}`}
+                    onClick={() => setHistoryTab('all')}
+                  >
+                    Вся історія
+                  </button>
+                  <button 
+                    className={`tab-btn ${historyTab === 'favorites' ? 'active' : ''}`}
+                    onClick={() => setHistoryTab('favorites')}
+                  >
+                    Збережені
+                  </button>
                 </div>
               </div>
 
               {/* Plans Grid */}
-              <div className="plans-grid">
-                {/* Sample Plan Cards */}
-                <div className="plan-card">
-                  <div className="plan-card-header">
-                    <h3>Гастро-тур: Вінниця</h3>
-                    <div className="plan-date">21 жовтня 2025</div>
-                  </div>
-                  <div className="plan-card-body">
-                    <div className="plan-location">
-                      <i className="fas fa-map-marker-alt"></i>
-                      Місто: Вінниця
-                    </div>
-                    <div className="plan-description">
-                      Початок: Кав'ярня 'Чорна Кішка', далі відвідування місцевих ресторанів та дегустація традиційних страв...
-                    </div>
-                  </div>
-                  <div className="plan-card-actions">
-                    <button className="action-btn detail-btn">
-                      <i className="fas fa-eye"></i>
-                      Детальніше
-                    </button>
-                    <button className="action-btn favorite-btn">
-                      <i className="fas fa-star"></i>
-                    </button>
-                    <button className="action-btn delete-btn">
-                      <i className="fas fa-trash"></i>
-                    </button>
-                  </div>
-                </div>
+              {(() => {
+                const normalizedSearch = historySearch.toLowerCase().trim();
+                const filtered = planHistory
+                  .filter(item => historyTab === 'all' || item.isFavorite)
+                  .filter(item => {
+                    if (!normalizedSearch) return true;
+                    const inTitle = item.plan.title.toLowerCase().includes(normalizedSearch);
+                    const inSubtitle = item.plan.subtitle?.toLowerCase().includes(normalizedSearch);
+                    const inPrompt = item.prompt.toLowerCase().includes(normalizedSearch);
+                    const inActivities = item.plan.activities.some(a =>
+                      a.location.toLowerCase().includes(normalizedSearch) ||
+                      a.title.toLowerCase().includes(normalizedSearch)
+                    );
+                    return inTitle || inSubtitle || inPrompt || inActivities;
+                  });
 
-                <div className="plan-card">
-                  <div className="plan-card-header">
-                    <h3>Культурний день: Київ</h3>
-                    <div className="plan-date">18 жовтня 2025</div>
-                  </div>
-                  <div className="plan-card-body">
-                    <div className="plan-location">
-                      <i className="fas fa-map-marker-alt"></i>
-                      Місто: Київ
+                if (filtered.length === 0) {
+                  return (
+                    <div className="empty-state">
+                      <div className="empty-state-icon">
+                        <i className="fas fa-calendar-plus"></i>
+                      </div>
+                      <h3>Поки що немає збережених планів</h3>
+                      <p>Створіть свій перший ідеальний день, і він з'явиться тут в історії.</p>
+                      <button className="create-plan-btn" onClick={closeHistoryModal}>
+                        <i className="fas fa-plus"></i>
+                        Створити план
+                      </button>
                     </div>
-                    <div className="plan-description">
-                      Відвідування музеїв, галерей та історичних пам'яток. Початок з Національного музею мистецтв...
-                    </div>
-                  </div>
-                  <div className="plan-card-actions">
-                    <button className="action-btn detail-btn">
-                      <i className="fas fa-eye"></i>
-                      Детальніше
-                    </button>
-                    <button className="action-btn favorite-btn active">
-                      <i className="fas fa-star"></i>
-                    </button>
-                    <button className="action-btn delete-btn">
-                      <i className="fas fa-trash"></i>
-                    </button>
-                  </div>
-                </div>
+                  );
+                }
 
-                <div className="plan-card">
-                  <div className="plan-card-header">
-                    <h3>Природний маршрут: Карпати</h3>
-                    <div className="plan-date">15 жовтня 2025</div>
-                  </div>
-                  <div className="plan-card-body">
-                    <div className="plan-location">
-                      <i className="fas fa-map-marker-alt"></i>
-                      Місто: Карпати
-                    </div>
-                    <div className="plan-description">
-                      Пішохідний маршрут по гірських стежках, відвідування водоспадів та насолода природою...
-                    </div>
-                  </div>
-                  <div className="plan-card-actions">
-                    <button className="action-btn detail-btn">
-                      <i className="fas fa-eye"></i>
-                      Детальніше
-                    </button>
-                    <button className="action-btn favorite-btn">
-                      <i className="fas fa-star"></i>
-                    </button>
-                    <button className="action-btn delete-btn">
-                      <i className="fas fa-trash"></i>
-                    </button>
-                  </div>
-                </div>
-              </div>
+                return (
+                  <div className="plans-grid">
+                    {filtered.map(item => {
+                      const createdDate = new Date(item.createdAt);
+                      const dateText = createdDate.toLocaleDateString('uk-UA', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric'
+                      });
 
-              {/* Empty State (hidden when there are plans) */}
-              <div className="empty-state" style={{ display: 'none' }}>
-                <div className="empty-state-icon">
-                  <i className="fas fa-calendar-plus"></i>
-                </div>
-                <h3>Ви ще не створювали ідеальних днів</h3>
-                <p>Давайте почнемо! Створіть свій перший план дня.</p>
-                <button className="create-plan-btn" onClick={closeHistoryModal}>
-                  <i className="fas fa-plus"></i>
-                  Створити план
-                </button>
-              </div>
+                      const firstActivity = item.plan.activities[0];
+
+                      const handleOpenDetails = () => {
+                        setGeneratedPlan(item.plan);
+                        closeHistoryModal();
+                      };
+
+                      const handleToggleFavorite = (e: React.MouseEvent) => {
+                        e.stopPropagation();
+                        togglePlanFavoriteInHistory(item.id);
+                      };
+
+                      const handleDelete = (e: React.MouseEvent) => {
+                        e.stopPropagation();
+                        deletePlanFromHistory(item.id);
+                      };
+
+                      return (
+                        <div 
+                          key={item.id} 
+                          className="plan-card"
+                          onClick={handleOpenDetails}
+                        >
+                          <div className="plan-card-header">
+                            <h3>{item.plan.title}</h3>
+                            <div className="plan-date">{dateText}</div>
+                          </div>
+                          <div className="plan-card-body">
+                            {firstActivity && (
+                              <div className="plan-location">
+                                <i className="fas fa-map-marker-alt"></i>
+                                {firstActivity.location}
+                              </div>
+                            )}
+                            <div className="plan-description">
+                              {item.plan.subtitle || item.prompt}
+                            </div>
+                          </div>
+                          <div className="plan-card-actions">
+                            <button 
+                              className="action-btn detail-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenDetails();
+                              }}
+                            >
+                              <i className="fas fa-eye"></i>
+                              Детальніше
+                            </button>
+                            <button 
+                              className={`action-btn favorite-btn ${item.isFavorite ? 'active' : ''}`}
+                              onClick={handleToggleFavorite}
+                              title={item.isFavorite ? 'Видалити з обраних' : 'Додати в обрані'}
+                            >
+                              <i className="fas fa-star"></i>
+                            </button>
+                            <button 
+                              className="action-btn delete-btn"
+                              onClick={handleDelete}
+                              title="Видалити з історії"
+                            >
+                              <i className="fas fa-trash"></i>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>

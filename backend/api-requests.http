@@ -1,0 +1,143 @@
+### Environment Variables
+@baseUrl = http://localhost:5000/api
+@token = YOUR_JWT_TOKEN_HERE
+
+### =======================================
+### AUTHENTICATION
+### =======================================
+
+### Register User
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+    "username": "testuser",
+    "email": "test@example.com",
+    "password": "password123"
+}
+
+###
+
+### Login User
+### IMPORTANT: Copy the token from the response to the @token variable at the top
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "test@example.com",
+    "password": "password123"
+}
+
+
+### =======================================
+### USERS
+### =======================================
+
+### Get Current User Profile
+GET {{baseUrl}}/users/me
+Authorization: Bearer {{token}}
+
+###
+
+### Update User Profile & Settings
+PUT {{baseUrl}}/users/update-profile
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "username": "newusername",
+    "theme": "dark",
+    "notificationsEnabled": false
+}
+
+
+### =======================================
+### FAVORITE PLACES
+### =======================================
+
+### Get Places
+GET {{baseUrl}}/places
+Authorization: Bearer {{token}}
+
+###
+
+### Add Place
+POST {{baseUrl}}/places
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "title": "Central Park",
+    "description": "Lovely park in NYC",
+    "location": "New York",
+    "isFavorite": true
+}
+
+###
+
+### Update Place
+### Replace :id with the returned ID
+PUT {{baseUrl}}/places/:id
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "isFavorite": false
+}
+
+###
+
+### Delete Place
+### Replace :id with the returned ID
+DELETE {{baseUrl}}/places/:id
+Authorization: Bearer {{token}}
+
+
+### =======================================
+### PLANS
+### =======================================
+
+### Get Plans (with filtering)
+GET {{baseUrl}}/plans?status=planned&priority=high&page=1&limit=5
+Authorization: Bearer {{token}}
+
+###
+
+### Create Plan
+POST {{baseUrl}}/plans
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "title": "Visit Museum",
+    "description": "Check out the new exhibition",
+    "date": "2026-05-10T10:00:00.000Z",
+    "priority": "high"
+}
+
+###
+
+### Complete Plan
+### Replace :id with the returned ID
+PUT {{baseUrl}}/plans/:id
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "status": "completed"
+}
+
+###
+
+### Delete Plan
+DELETE {{baseUrl}}/plans/:id
+Authorization: Bearer {{token}}
+
+
+### =======================================
+### HISTORY (ACTIVITY LOG)
+### =======================================
+
+### Get History Logs (Paginated)
+GET {{baseUrl}}/history?page=1&limit=10
+Authorization: Bearer {{token}}

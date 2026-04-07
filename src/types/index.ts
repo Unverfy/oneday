@@ -13,6 +13,15 @@ export interface DayPlan {
   activities: Activity[];
 }
 
+// Історія згенерованих планів
+export interface PlanHistoryItem {
+  id: string;
+  prompt: string;          // текст запиту користувача
+  plan: DayPlan;          // збережений план
+  createdAt: string;      // ISO-рядок дати для зручного збереження в localStorage
+  isFavorite?: boolean;   // позначка "збережений" у історії
+}
+
 export interface SelectedOptions {
   theme: ThemeType | null;
   dayType: DayType | null;
@@ -69,6 +78,7 @@ export interface AppState {
   selectedOptions: SelectedOptions;
   isLoading: boolean;
   generatedPlan: DayPlan | null;
+  planHistory: PlanHistoryItem[];
   error: string | null;
   favoriteLocations: FavoriteLocation[];
   isAuthenticated: boolean;
@@ -80,6 +90,9 @@ export type AppAction =
   | { type: 'SET_SELECTED_OPTIONS'; payload: SelectedOptions }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_GENERATED_PLAN'; payload: DayPlan | null }
+  | { type: 'ADD_PLAN_HISTORY'; payload: PlanHistoryItem }
+  | { type: 'DELETE_PLAN_HISTORY'; payload: string }
+  | { type: 'TOGGLE_PLAN_HISTORY_FAVORITE'; payload: string }
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'ADD_TO_FAVORITES'; payload: FavoriteLocation }
   | { type: 'REMOVE_FROM_FAVORITES'; payload: string }

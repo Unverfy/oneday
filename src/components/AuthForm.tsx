@@ -13,6 +13,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuth }) => {
     confirmPassword: ''
   });
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [apiError, setApiError] = useState<string>('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -27,6 +28,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuth }) => {
         [name]: ''
       }));
     }
+    if (apiError) setApiError('');
   };
 
   const validateForm = () => {
@@ -62,15 +64,42 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuth }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setApiError('');
     
     if (validateForm()) {
-      onAuth({
-        login: formData.login,
-        email: formData.email,
-        password: formData.password
-      });
+      try {
+        const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+        const payload = isLogin 
+          ? { email: formData.email, password: formData.password }
+          : { username: formData.login, email: formData.email, password: formData.password };
+        
+        const response = await fetch(`${endpoint}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload)
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.message || 'Щось пішло не так');
+        }
+        
+        // Save JWT to localStorage
+        localStorage.setItem('oneday-token', data.token);
+        
+        onAuth({
+          login: data.username,
+          email: data.email,
+          password: '' // Don't store password in context
+        });
+      } catch (err: any) {
+        setApiError(err.message);
+      }
     }
   };
 
@@ -83,6 +112,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuth }) => {
       confirmPassword: ''
     });
     setErrors({});
+    setApiError('');
   };
 
   return (
@@ -141,6 +171,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuth }) => {
             }
           </p>
         </div>
+
+        {apiError && (
+          <div className="error-message" style={{ textAlign: 'center', marginBottom: '1rem', fontSize: '14px', background: 'rgba(255, 77, 79, 0.1)', padding: '10px', borderRadius: '8px' }}>
+            {apiError}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
