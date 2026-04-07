@@ -17,6 +17,9 @@ const FavoritePlaceSchema = new mongoose.Schema(
     location: {
       type: String, // City or coordinates
     },
+    time: {
+      type: String, // Activity time
+    },
     image: {
       type: String, // URL to image
     },

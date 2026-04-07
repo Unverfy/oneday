@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, ReactNode, Dispatch, useCallback } from 'react';
+import React, { createContext, useContext, useReducer, ReactNode, Dispatch, useCallback, useEffect } from 'react';
 import { AppState, Theme, SelectedOptions, DayPlan, FavoriteLocation, User, AppAction, PlanHistoryItem } from '../types';
 
 interface AppContextType extends AppState {
@@ -6,12 +6,12 @@ interface AppContextType extends AppState {
   setSelectedOptions: (options: SelectedOptions) => void;
   setLoading: (loading: boolean) => void;
   setGeneratedPlan: (plan: DayPlan | null) => void;
-  addPlanToHistory: (params: { prompt: string; plan: DayPlan }) => void;
-  deletePlanFromHistory: (id: string) => void;
-  togglePlanFavoriteInHistory: (id: string) => void;
+  addPlanToHistory: (params: { prompt: string; plan: DayPlan }) => Promise<void>;
+  deletePlanFromHistory: (id: string) => Promise<void>;
+  togglePlanFavoriteInHistory: (id: string) => Promise<void>;
   setError: (error: string | null) => void;
-  addToFavorites: (activity: { time: string; title: string; description: string; location: string }) => void;
-  removeFromFavorites: (id: string) => void;
+  addToFavorites: (activity: { time: string; title: string; description: string; location: string }) => Promise<void>;
+  removeFromFavorites: (id: string) => Promise<void>;
   login: (userData: User) => void;
   logout: () => void;
   resetApp: () => void;
@@ -42,6 +42,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, isLoading: action.payload };
     case 'SET_GENERATED_PLAN':
       return { ...state, generatedPlan: action.payload };
+    case 'SET_PLAN_HISTORY':
+        return { ...state, planHistory: action.payload };
     case 'ADD_PLAN_HISTORY':
       return {
         ...state,
@@ -72,7 +74,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         favoriteLocations: state.favoriteLocations.filter(fav => fav.id !== action.payload)
       };
     case 'SET_FAVORITES':
-      return { ...state, favoriteLocations: action.payload };
+      return { ...state, favoriteLocations: action.payload as FavoriteLocation[] };
     case 'LOGIN':
       return { ...state, isAuthenticated: true, user: action.payload };
     case 'LOGOUT':
@@ -86,37 +88,71 @@ function appReducer(state: AppState, action: AppAction): AppState {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export function AppProvider({ children }: { children: ReactNode }) {
-  // Initialize state with favorites and user from localStorage
-  const [state, dispatch] = useReducer(appReducer, initialState, () => {
-    const savedFavorites = localStorage.getItem('oneday-favorites');
-    const savedUser = localStorage.getItem('oneday-user');
-    const savedHistory = localStorage.getItem('oneday-plan-history');
-    
-    const favorites = savedFavorites ? JSON.parse(savedFavorites).map((fav: any) => ({
-      ...fav,
-      addedAt: new Date(fav.addedAt)
-    })) : [];
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('oneday-token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+  };
+};
 
+export function AppProvider({ children }: { children: ReactNode }) {
+  // Initialize state with user from localStorage
+  const [state, dispatch] = useReducer(appReducer, initialState, () => {
+    const savedUser = localStorage.getItem('oneday-user');
     const user = savedUser ? JSON.parse(savedUser) : null;
 
-    const planHistory: PlanHistoryItem[] = savedHistory
-      ? JSON.parse(savedHistory)
-      : [];
-    
-    // Логування завантажених інтересів
-    if (user && user.interests) {
-      console.log('📥 Loaded user interests from localStorage:', user.interests);
-    }
-
+    // Load initial empty history/favorites, will fetch dynamically if logged in
     return {
       ...initialState,
-      favoriteLocations: favorites,
-      planHistory,
       isAuthenticated: !!user,
       user: user
     };
-  }) as [AppState, Dispatch<AppAction>];
+  }) as [AppState, Dispatch<any>];
+
+  // Fetch data cleanly automatically on load if authenticated
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!state.isAuthenticated) return;
+      
+      try {
+        // Fetch Favorites
+        const placesRes = await fetch('/api/places', { headers: getAuthHeaders() });
+        if (placesRes.ok) {
+          const placesData = await placesRes.json();
+          const mappedFavorites = placesData.map((fav: any) => ({
+            id: fav._id,
+            title: fav.title,
+            description: fav.description || '',
+            location: fav.location || '',
+            time: fav.time || '',
+            addedAt: new Date(fav.createdAt)
+          }));
+          dispatch({ type: 'SET_FAVORITES', payload: mappedFavorites });
+        }
+
+        // Fetch Plans
+        const plansRes = await fetch('/api/plans?limit=100', { headers: getAuthHeaders() });
+        if (plansRes.ok) {
+          const plansData = await plansRes.json();
+          // plans array usually inside data object due to our backend paginated response
+          const plansArray = plansData.data || plansData; 
+          const mappedPlans = plansArray.map((plan: any) => ({
+            id: plan._id,
+            prompt: plan.title,
+            plan: plan.description ? JSON.parse(plan.description) : null,
+            createdAt: plan.date,
+            isFavorite: plan.status === 'completed' // Reuse status for favorite as string
+          }));
+          dispatch({ type: 'SET_PLAN_HISTORY', payload: mappedPlans });
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    };
+
+    fetchUserData();
+  }, [state.isAuthenticated]);
 
   const setTheme = useCallback((theme: Theme) => {
     dispatch({ type: 'SET_THEME', payload: theme });
@@ -135,83 +171,148 @@ export function AppProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'SET_GENERATED_PLAN', payload: plan });
   }, [dispatch]);
 
-  const persistHistory = (items: PlanHistoryItem[]) => {
-    localStorage.setItem('oneday-plan-history', JSON.stringify(items));
-  };
+  const addPlanToHistory = useCallback(async (params: { prompt: string; plan: DayPlan }) => {
+    try {
+      if (state.isAuthenticated) {
+        const res = await fetch('/api/plans', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            title: params.prompt || 'Generated Plan',
+            description: JSON.stringify(params.plan),
+            date: new Date().toISOString()
+          })
+        });
 
-  const addPlanToHistory = useCallback((params: { prompt: string; plan: DayPlan }) => {
-    const newItem: PlanHistoryItem = {
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      prompt: params.prompt,
-      plan: params.plan,
-      createdAt: new Date().toISOString(),
-      isFavorite: false
-    };
+        if (res.ok) {
+          const planData = await res.json();
+          const newItem: PlanHistoryItem = {
+            id: planData._id,
+            prompt: planData.title,
+            plan: JSON.parse(planData.description),
+            createdAt: planData.date,
+            isFavorite: false
+          };
+          dispatch({ type: 'ADD_PLAN_HISTORY', payload: newItem });
+          return;
+        }
+      }
+      
+      // Fallback
+      dispatch({ type: 'ADD_PLAN_HISTORY', payload: {
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        prompt: params.prompt,
+        plan: params.plan,
+        createdAt: new Date().toISOString(),
+        isFavorite: false
+      } });
+    } catch(err) {
+      console.error(err);
+    }
+  }, [dispatch, state.isAuthenticated]);
 
-    const updatedHistory = [newItem, ...state.planHistory];
-    dispatch({ type: 'ADD_PLAN_HISTORY', payload: newItem });
-    persistHistory(updatedHistory);
-  }, [dispatch, state.planHistory]);
+  const deletePlanFromHistory = useCallback(async (id: string) => {
+    try {
+      if (state.isAuthenticated && !id.includes('-')) {
+        await fetch(`/api/plans/${id}`, {
+          method: 'DELETE',
+          headers: getAuthHeaders()
+        });
+      }
+      dispatch({ type: 'DELETE_PLAN_HISTORY', payload: id });
+    } catch(err) {
+      console.error(err);
+    }
+  }, [dispatch, state.isAuthenticated]);
 
-  const deletePlanFromHistory = useCallback((id: string) => {
-    const updatedHistory = state.planHistory.filter(item => item.id !== id);
-    dispatch({ type: 'DELETE_PLAN_HISTORY', payload: id });
-    persistHistory(updatedHistory);
-  }, [dispatch, state.planHistory]);
-
-  const togglePlanFavoriteInHistory = useCallback((id: string) => {
-    const updatedHistory = state.planHistory.map(item =>
-      item.id === id ? { ...item, isFavorite: !item.isFavorite } : item
-    );
-    dispatch({ type: 'TOGGLE_PLAN_HISTORY_FAVORITE', payload: id });
-    persistHistory(updatedHistory);
-  }, [dispatch, state.planHistory]);
+  const togglePlanFavoriteInHistory = useCallback(async (id: string) => {
+    try {
+      const item = state.planHistory.find(i => i.id === id);
+      if (item && state.isAuthenticated && !id.includes('-')) {
+        await fetch(`/api/plans/${id}`, {
+          method: 'PUT',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            status: !item.isFavorite ? 'completed' : 'planned' // using status backend field
+          })
+        });
+      }
+      dispatch({ type: 'TOGGLE_PLAN_HISTORY_FAVORITE', payload: id });
+    } catch (err) {
+      console.error(err);
+    }
+  }, [dispatch, state.planHistory, state.isAuthenticated]);
 
   const setError = useCallback((error: string | null) => {
     dispatch({ type: 'SET_ERROR', payload: error });
   }, [dispatch]);
 
-  const addToFavorites = useCallback((activity: { time: string; title: string; description: string; location: string }) => {
-    const favoriteLocation: FavoriteLocation = {
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      title: activity.title,
-      description: activity.description,
-      location: activity.location,
-      time: activity.time,
-      addedAt: new Date()
-    };
-    
-    dispatch({ type: 'ADD_TO_FAVORITES', payload: favoriteLocation });
-    
-    // Save to localStorage
-    const updatedFavorites = [...state.favoriteLocations, favoriteLocation];
-    localStorage.setItem('oneday-favorites', JSON.stringify(updatedFavorites));
-  }, [dispatch, state.favoriteLocations]);
+  const addToFavorites = useCallback(async (activity: { time: string; title: string; description: string; location: string }) => {
+    try {
+      if (state.isAuthenticated) {
+        const res = await fetch('/api/places', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            title: activity.title,
+            description: activity.description,
+            location: activity.location,
+            time: activity.time,
+            isFavorite: true
+          })
+        });
+        
+        if (res.ok) {
+          const favData = await res.json();
+          dispatch({ type: 'ADD_TO_FAVORITES', payload: {
+            id: favData._id,
+            title: favData.title,
+            description: favData.description || '',
+            location: favData.location || '',
+            time: favData.time || '',
+            addedAt: new Date(favData.createdAt)
+          }});
+          return;
+        }
+      }
 
-  const removeFromFavorites = useCallback((id: string) => {
-    dispatch({ type: 'REMOVE_FROM_FAVORITES', payload: id });
-    
-    // Update localStorage
-    const updatedFavorites = state.favoriteLocations.filter((fav: FavoriteLocation) => fav.id !== id);
-    localStorage.setItem('oneday-favorites', JSON.stringify(updatedFavorites));
-  }, [dispatch, state.favoriteLocations]);
+      // Fallback
+      dispatch({ type: 'ADD_TO_FAVORITES', payload: {
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        ...activity,
+        addedAt: new Date()
+      }});
+    } catch (err) {
+      console.error(err);
+    }
+  }, [dispatch, state.isAuthenticated]);
+
+  const removeFromFavorites = useCallback(async (id: string) => {
+    try {
+      if (state.isAuthenticated && !id.includes('-')) {
+        await fetch(`/api/places/${id}`, {
+          method: 'DELETE',
+          headers: getAuthHeaders()
+        });
+      }
+      dispatch({ type: 'REMOVE_FROM_FAVORITES', payload: id });
+    } catch(err) {
+      console.error(err);
+    }
+  }, [dispatch, state.isAuthenticated]);
 
   const login = useCallback((userData: User) => {
     dispatch({ type: 'LOGIN', payload: userData });
-    // Save user data to localStorage
     localStorage.setItem('oneday-user', JSON.stringify(userData));
-    console.log('💾 User data saved to localStorage:', {
-      login: userData.login,
-      interests: userData.interests,
-      budget: userData.budget,
-      company: userData.company
-    });
   }, [dispatch]);
 
   const logout = useCallback(() => {
     dispatch({ type: 'LOGOUT' });
-    // Remove user data from localStorage
     localStorage.removeItem('oneday-user');
+    localStorage.removeItem('oneday-token');
+    // Clear history visually
+    dispatch({ type: 'SET_PLAN_HISTORY', payload: [] });
+    dispatch({ type: 'SET_FAVORITES', payload: [] });
   }, [dispatch]);
 
   const resetApp = useCallback(() => {

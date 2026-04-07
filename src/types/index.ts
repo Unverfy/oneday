@@ -97,6 +97,7 @@ export type AppAction =
   | { type: 'ADD_TO_FAVORITES'; payload: FavoriteLocation }
   | { type: 'REMOVE_FROM_FAVORITES'; payload: string }
   | { type: 'SET_FAVORITES'; payload: FavoriteLocation[] }
+  | { type: 'SET_PLAN_HISTORY'; payload: PlanHistoryItem[] }
   | { type: 'LOGIN'; payload: User }
   | { type: 'LOGOUT' }
   | { type: 'RESET_APP' };
