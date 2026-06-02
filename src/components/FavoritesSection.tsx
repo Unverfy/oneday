@@ -32,7 +32,17 @@ const FavoritesSection: React.FC = () => {
               <div className="favorite-description">{favorite.description}</div>
               <div className="favorite-location">
                 <i className="fas fa-map-marker-alt"></i>
-                {favorite.location}
+                <span>{favorite.location}</span>
+                <a 
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(favorite.location)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="map-link-btn"
+                  title="Відкрити в Google Maps"
+                  style={{ marginLeft: '8px', color: '#4a90e2', textDecoration: 'none', transition: 'color 0.2s', fontSize: '1.3em' }}
+                >
+                  <i className="fas fa-map-marked-alt"></i>
+                </a>
               </div>
               <div className="favorite-date">
                 Додано: {favorite.addedAt.toLocaleDateString('uk-UA')}

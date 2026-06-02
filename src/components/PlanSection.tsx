@@ -74,7 +74,17 @@ const PlanSection: React.FC = () => {
                     <div className="activity-description">{activity.description}</div>
                     <div className="activity-location">
                       <i className="fas fa-map-marker-alt"></i>
-                      {activity.location}
+                      <span>{activity.location}</span>
+                      <a 
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(activity.location)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="map-link-btn"
+                        title="Відкрити в Google Maps"
+                        style={{ marginLeft: '8px', color: '#4a90e2', textDecoration: 'none', transition: 'color 0.2s', fontSize: '1.3em' }}
+                      >
+                        <i className="fas fa-map-marked-alt"></i>
+                      </a>
                     </div>
                     <button 
                       className={`favorite-btn ${isFavorite ? 'favorited' : ''}`}

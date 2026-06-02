@@ -1,4 +1,5 @@
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
 console.log("ПЕРЕВІРКА URI:", process.env.MONGODB_URI ? "ЗНАЙДЕНО ✅" : "НЕМАЄ ❌");
 const express = require("express");
 const mongoose = require("mongoose");

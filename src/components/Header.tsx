@@ -27,6 +27,14 @@ const Header: React.FC = () => {
   const [historySearch, setHistorySearch] = useState('');
   const [historyTab, setHistoryTab] = useState<'all' | 'favorites'>('all');
   
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  
   // Interests state
   const [selectedInterests, setSelectedInterests] = useState<string[]>(user?.interests || []);
   const [selectedBudget, setSelectedBudget] = useState<string>(user?.budget || '');
@@ -35,6 +43,59 @@ const Header: React.FC = () => {
   const toggleTheme = () => {
     const newTheme = currentTheme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordError('Будь ласка, заповніть всі поля');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Нові паролі не співпадають');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setPasswordError('Новий пароль має бути мінімум 6 символів');
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      const token = localStorage.getItem('oneday-token');
+      const response = await fetch('/api/auth/change-password', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setPasswordSuccess('Пароль успішно змінено!');
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setTimeout(() => {
+          setChangePasswordModalOpen(false);
+          setPasswordSuccess('');
+        }, 2000);
+      } else {
+        setPasswordError(data.message || 'Помилка при зміні пароля');
+      }
+    } catch (error) {
+      setPasswordError('Помилка сервера. Спробуйте пізніше.');
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
 
   const openSidebar = () => {
@@ -852,20 +913,9 @@ const Header: React.FC = () => {
             </div>
             <div className="edit-profile-modal-content">
               <form className="edit-profile-form">
-                <div className="profile-photo-section">
+                <div className="profile-photo-section" style={{ justifyContent: 'center', marginBottom: '20px' }}>
                   <div className="current-photo">
-                    <i className="fas fa-user-circle"></i>
-                  </div>
-                  <div className="photo-actions">
-                    <label htmlFor="photo-upload" className="photo-upload-btn">
-                      <i className="fas fa-camera"></i>
-                      Змінити фото
-                    </label>
-                    <input type="file" id="photo-upload" accept="image/*" style={{ display: 'none' }} />
-                    <button type="button" className="remove-photo-btn">
-                      <i className="fas fa-trash"></i>
-                      Видалити фото
-                    </button>
+                    <i className="fas fa-user-circle" style={{ fontSize: '64px', color: '#ccc' }}></i>
                   </div>
                 </div>
                 
@@ -921,28 +971,31 @@ const Header: React.FC = () => {
               </button>
             </div>
             <div className="change-password-modal-content">
-              <form className="change-password-form">
+              <form className="change-password-form" onSubmit={handleChangePassword}>
+                {passwordError && <div className="error-message" style={{ color: '#e74c3c', marginBottom: '15px', padding: '10px', backgroundColor: 'rgba(231, 76, 60, 0.1)', borderRadius: '8px' }}>{passwordError}</div>}
+                {passwordSuccess && <div className="success-message" style={{ color: '#2ecc71', marginBottom: '15px', padding: '10px', backgroundColor: 'rgba(46, 204, 113, 0.1)', borderRadius: '8px' }}>{passwordSuccess}</div>}
+                
                 <div className="form-group">
                   <label htmlFor="current-password">Поточний пароль</label>
-                  <input type="password" id="current-password" placeholder="Введіть поточний пароль" />
+                  <input type="password" id="current-password" placeholder="Введіть поточний пароль" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
                 </div>
                 
                 <div className="form-group">
                   <label htmlFor="new-password">Новий пароль</label>
-                  <input type="password" id="new-password" placeholder="Введіть новий пароль" />
+                  <input type="password" id="new-password" placeholder="Введіть новий пароль" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
                 </div>
                 
                 <div className="form-group">
                   <label htmlFor="confirm-password">Підтвердіть новий пароль</label>
-                  <input type="password" id="confirm-password" placeholder="Підтвердіть новий пароль" />
+                  <input type="password" id="confirm-password" placeholder="Підтвердіть новий пароль" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
                 </div>
                 
                 <div className="form-actions">
-                  <button type="button" className="cancel-btn" onClick={closeChangePasswordModal}>
+                  <button type="button" className="cancel-btn" onClick={closeChangePasswordModal} disabled={isChangingPassword}>
                     Скасувати
                   </button>
-                  <button type="submit" className="save-btn">
-                    Зберегти пароль
+                  <button type="submit" className="save-btn" disabled={isChangingPassword}>
+                    {isChangingPassword ? 'Збереження...' : 'Зберегти пароль'}
                   </button>
                 </div>
               </form>
